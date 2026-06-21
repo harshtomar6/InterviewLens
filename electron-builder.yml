@@ -11,8 +11,15 @@ files:
 asarUnpack:
   - '**/*.{node,wasm}'
   - 'node_modules/ffmpeg-static/**'
+# --- Code signing (see SIGNING.md) ---
+# Signing is driven entirely by environment variables, so unsigned builds work
+# out of the box and signing turns on automatically when creds are present:
+#   macOS + Windows: CSC_LINK (cert .p12 path or base64) + CSC_KEY_PASSWORD
+#   macOS notarize:  APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID
+#                    and set `notarize: true` under `mac:` below.
 mac:
   category: public.app-category.productivity
+  icon: build/icon.icns
   target:
     - dmg
     - zip
@@ -20,14 +27,22 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # notarize: true   # enable once APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are set
   extendInfo:
     NSMicrophoneUsageDescription: InterviewLens records your microphone to transcribe and analyze interviews.
     NSAudioCaptureUsageDescription: InterviewLens captures system audio (the other participant) to transcribe and analyze interviews.
     NSCameraUsageDescription: Not used; required only because system-audio loopback opens the display-capture pipeline.
 win:
+  icon: build/icon.png # electron-builder generates the .ico from this
   target:
     - nsis
+  # certificateSubjectName: ...   # or use CSC_LINK/CSC_KEY_PASSWORD env (see SIGNING.md)
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
 linux:
+  icon: build/icon.png
   target:
     - AppImage
   category: Utility

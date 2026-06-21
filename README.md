@@ -76,6 +76,8 @@ npm run dist:mac     # signed/notarizable .dmg + .zip (configure signing yoursel
 
 Packaging is configured in `electron-builder.yml`. macOS `Info.plist` keys (`NSMicrophoneUsageDescription`, `NSAudioCaptureUsageDescription`) and entitlements (`build/entitlements.mac.plist`) are wired up for a hardened-runtime build.
 
+Builds are **unsigned** by default. CI (`.github/workflows/build.yml`) builds macOS + Windows installers on native runners — trigger it from the Actions tab or by pushing a `v*` tag. For code signing & notarization (and replacing the placeholder app icon), see [SIGNING.md](./SIGNING.md).
+
 ---
 
 ## OpenRouter setup
