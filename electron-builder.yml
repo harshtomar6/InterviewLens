@@ -1,0 +1,33 @@
+appId: com.interviewlens.app
+productName: InterviewLens
+directories:
+  buildResources: build
+  output: dist-app
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintrc,.prettierrc,tsconfig*.json,README.md}'
+asarUnpack:
+  - '**/*.{node,wasm}'
+  - 'node_modules/ffmpeg-static/**'
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: InterviewLens records your microphone to transcribe and analyze interviews.
+    NSAudioCaptureUsageDescription: InterviewLens captures system audio (the other participant) to transcribe and analyze interviews.
+    NSCameraUsageDescription: Not used; required only because system-audio loopback opens the display-capture pipeline.
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+  category: Utility
