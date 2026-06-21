@@ -3,6 +3,14 @@ productName: InterviewLens
 # Ad-hoc signs the macOS bundle when no real cert is set, so unsigned builds
 # open via right-click → Open instead of being blocked as "damaged".
 afterSign: build/afterSign.cjs
+# Publish target for `--publish` (GitHub Releases). On a v* tag build, CI uploads
+# the installers as assets to a DRAFT release for that tag — publish it to make
+# the binaries publicly downloadable (on a public repo).
+publish:
+  provider: github
+  owner: harshtomar6
+  repo: InterviewLens
+  releaseType: draft
 directories:
   buildResources: build
   output: dist-app
