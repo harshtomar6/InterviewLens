@@ -3,6 +3,7 @@ import type { Interview, InterviewMeta } from '@shared/types'
 import { RoleAvatar } from '../components/RoleAvatar'
 import { StatusBadge } from '../components/StatusBadge'
 import { ErrorNotice } from '../components/ErrorNotice'
+import { EditableTitle } from '../components/EditableTitle'
 import { dayBucket, formatDuration, formatFull, formatRelative, type DayBucket } from '../lib/format'
 
 interface Props {
@@ -57,6 +58,11 @@ export function LibraryScreen({ onOpen, onNew, onRetryTranscription }: Props): J
     void load()
   }
 
+  const rename = async (id: string, title: string): Promise<void> => {
+    const saved = await window.api.renameInterview(id, title)
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, title: saved } : it)))
+  }
+
   const runAnalysis = async (id: string): Promise<void> => {
     setBusyId(id)
     setError(null)
@@ -102,7 +108,6 @@ export function LibraryScreen({ onOpen, onNew, onRetryTranscription }: Props): J
     const openable = it.status === 'complete' || it.hasTranscript
     const failedAnalysis = it.status === 'error' && it.hasTranscript
     const failedTranscription = it.status === 'error' && !it.hasTranscript
-    const roleLabel = it.role === 'interviewer' ? 'Interviewer' : 'Candidate'
 
     return (
       <div
@@ -113,52 +118,52 @@ export function LibraryScreen({ onOpen, onNew, onRetryTranscription }: Props): J
         <RoleAvatar role={it.role} />
         <div className="lib-body">
           <div className="lib-row1">
-            <span className="lib-when" title={formatFull(it.createdAt)}>
-              {formatRelative(it.createdAt)}
-            </span>
-            <StatusBadge status={it.status} />
+            <EditableTitle value={it.title} onSave={(title) => rename(it.id, title)} />
           </div>
-          <div className="lib-row2">
-            {roleLabel} · {formatDuration(it.durationSec)}
+          <div className="lib-row2" title={formatFull(it.createdAt)}>
+            {formatRelative(it.createdAt)} · {formatDuration(it.durationSec)}
           </div>
           {it.status === 'error' && (
             <ErrorNotice error={it.error} phase={failedAnalysis ? 'analysis' : 'transcription'} />
           )}
         </div>
 
-        <div className="lib-actions" onClick={(e) => e.stopPropagation()}>
-          {busyId === it.id ? (
-            <span className="hint">Running…</span>
-          ) : (
-            <>
-              {failedTranscription && (
-                <button className="btn small primary" onClick={() => onRetryTranscription(it)}>
-                  Run transcription
-                </button>
-              )}
-              {failedAnalysis && (
-                <button className="btn small primary" onClick={() => void runAnalysis(it.id)}>
-                  Run analysis
-                </button>
-              )}
-              {openable && (
-                <button className="btn small" onClick={() => void open(it.id)}>
-                  Open
-                </button>
-              )}
-              {confirmId === it.id ? (
-                <span className="confirm-del">
-                  Delete?
-                  <button className="icon-btn danger" title="Confirm" onClick={() => void remove(it.id)}>✓</button>
-                  <button className="icon-btn" title="Cancel" onClick={() => setConfirmId(null)}>✕</button>
-                </span>
-              ) : (
-                <button className="icon-btn del" title="Delete" onClick={() => setConfirmId(it.id)}>
-                  🗑
-                </button>
-              )}
-            </>
-          )}
+        <div className="lib-right" onClick={(e) => e.stopPropagation()}>
+          <StatusBadge status={it.status} />
+          <div className="lib-actions">
+            {busyId === it.id ? (
+              <span className="hint">Running…</span>
+            ) : (
+              <>
+                {failedTranscription && (
+                  <button className="btn small primary" onClick={() => onRetryTranscription(it)}>
+                    Run transcription
+                  </button>
+                )}
+                {failedAnalysis && (
+                  <button className="btn small primary" onClick={() => void runAnalysis(it.id)}>
+                    Run analysis
+                  </button>
+                )}
+                {openable && (
+                  <button className="btn small" onClick={() => void open(it.id)}>
+                    Open
+                  </button>
+                )}
+                {confirmId === it.id ? (
+                  <span className="confirm-del">
+                    Delete?
+                    <button className="icon-btn danger" title="Confirm" onClick={() => void remove(it.id)}>✓</button>
+                    <button className="icon-btn" title="Cancel" onClick={() => setConfirmId(null)}>✕</button>
+                  </span>
+                ) : (
+                  <button className="icon-btn del" title="Delete" onClick={() => setConfirmId(it.id)}>
+                    🗑
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     )

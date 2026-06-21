@@ -25,6 +25,7 @@ export const IPC = {
   listInterviews: 'lib:list',
   getInterview: 'lib:get',
   deleteInterview: 'lib:delete',
+  renameInterview: 'lib:rename',
   listChatThreads: 'chat:listThreads',
   getChatThread: 'chat:getThread',
   createChatThread: 'chat:createThread',

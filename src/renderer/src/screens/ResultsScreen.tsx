@@ -7,6 +7,7 @@ import { AudioTab } from '../components/AudioTab'
 import { RoleAvatar } from '../components/RoleAvatar'
 import { StatusBadge } from '../components/StatusBadge'
 import { ErrorNotice } from '../components/ErrorNotice'
+import { EditableTitle } from '../components/EditableTitle'
 import { formatDuration, formatFull, formatRelative } from '../lib/format'
 
 interface Props {
@@ -57,15 +58,26 @@ export function ResultsScreen({ interview: initial, onBack }: Props): JSX.Elemen
       <div className="results-head">
         <div className="results-ident">
           <RoleAvatar role={interview.role} size={44} />
-          <div>
-            <h1>{roleLabel} interview</h1>
+          <div className="results-meta">
+            <div className="title-line">
+              <EditableTitle
+                value={interview.title}
+                tag="h1"
+                onSave={async (title) => {
+                  const saved = await window.api.renameInterview(interview.id, title)
+                  setInterview({ ...interview, title: saved })
+                }}
+              />
+              <StatusBadge status={interview.status} />
+            </div>
             <div className="results-sub">
+              <span>{roleLabel}</span>
+              <span>·</span>
               <span title={formatFull(interview.createdAt)}>{formatRelative(interview.createdAt)}</span>
               <span>·</span>
               <span>{formatDuration(interview.durationSec)}</span>
               <span>·</span>
               <span className="lens-label">{lens}</span>
-              <StatusBadge status={interview.status} />
             </div>
           </div>
         </div>

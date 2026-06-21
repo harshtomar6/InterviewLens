@@ -63,6 +63,8 @@ const api = {
   listInterviews: (): Promise<InterviewMeta[]> => ipcRenderer.invoke(IPC.listInterviews),
   getInterview: (id: string): Promise<Interview | null> => ipcRenderer.invoke(IPC.getInterview, id),
   deleteInterview: (id: string): Promise<void> => ipcRenderer.invoke(IPC.deleteInterview, id),
+  renameInterview: (id: string, title: string): Promise<string> =>
+    ipcRenderer.invoke(IPC.renameInterview, id, title),
 
   // settings / keys
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke(IPC.getSettings),

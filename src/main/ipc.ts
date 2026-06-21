@@ -153,7 +153,7 @@ export function registerIpc(): void {
       const { interviewId, role, jobDescription, durationSec } = payload
       const title =
         payload.title?.trim() ||
-        `${role === 'interviewer' ? 'Interview' : 'My interview'} — ${new Date().toLocaleString()}`
+        `${role === 'interviewer' ? 'Interviewer' : 'Candidate'} interview`
 
       insertInterview({
         id: interviewId,
@@ -250,6 +250,12 @@ export function registerIpc(): void {
   handle(IPC.deleteInterview, async (_e, id: string) => {
     dbDeleteInterview(id)
     await deleteInterviewDir(id)
+  })
+  handle(IPC.renameInterview, (_e, id: string, title: string) => {
+    const trimmed = title.trim().slice(0, 120)
+    if (!trimmed) throw new Error('Title cannot be empty')
+    updateInterview(id, { title: trimmed })
+    return trimmed
   })
 
   // --- settings / keys ---
