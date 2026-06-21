@@ -4,6 +4,10 @@ import { Markdown } from '../components/Markdown'
 import { TranscriptView } from '../components/TranscriptView'
 import { ChatBox } from '../components/ChatBox'
 import { AudioTab } from '../components/AudioTab'
+import { RoleAvatar } from '../components/RoleAvatar'
+import { StatusBadge } from '../components/StatusBadge'
+import { ErrorNotice } from '../components/ErrorNotice'
+import { formatDuration, formatFull, formatRelative } from '../lib/format'
 
 interface Props {
   interview: Interview
@@ -18,6 +22,7 @@ export function ResultsScreen({ interview: initial, onBack }: Props): JSX.Elemen
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const roleLabel = interview.role === 'interviewer' ? 'Interviewer' : 'Candidate'
   const lens = interview.role === 'interviewer' ? 'Candidate evaluation' : 'Your coaching report'
 
   const exportAs = async (kind: 'md' | 'pdf'): Promise<void> => {
@@ -50,10 +55,19 @@ export function ResultsScreen({ interview: initial, onBack }: Props): JSX.Elemen
   return (
     <div className="screen results">
       <div className="results-head">
-        <div>
-          <h1>{interview.title}</h1>
-          <span className={`badge ${interview.role}`}>{interview.role}</span>
-          <span className="lens-label">{lens}</span>
+        <div className="results-ident">
+          <RoleAvatar role={interview.role} size={44} />
+          <div>
+            <h1>{roleLabel} interview</h1>
+            <div className="results-sub">
+              <span title={formatFull(interview.createdAt)}>{formatRelative(interview.createdAt)}</span>
+              <span>·</span>
+              <span>{formatDuration(interview.durationSec)}</span>
+              <span>·</span>
+              <span className="lens-label">{lens}</span>
+              <StatusBadge status={interview.status} />
+            </div>
+          </div>
         </div>
         <div className="results-actions">
           <button className="btn" onClick={() => void exportAs('md')}>Export .md</button>
@@ -82,9 +96,13 @@ export function ResultsScreen({ interview: initial, onBack }: Props): JSX.Elemen
         {tab === 'analysis' && (
           <div className="analysis-pane">
             {interview.analysisMarkdown ? (
-              <Markdown source={interview.analysisMarkdown} />
+              <div className="report">
+                <Markdown source={interview.analysisMarkdown} />
+              </div>
+            ) : interview.status === 'error' ? (
+              <ErrorNotice error={interview.error} phase="analysis" />
             ) : (
-              <p className="hint">No analysis yet — analysis may have failed. Run it below.</p>
+              <p className="hint">No analysis yet. Run it below.</p>
             )}
             <button className="btn" onClick={() => void reanalyze()} disabled={busy}>
               {interview.analysisMarkdown ? 'Re-run analysis with current model' : 'Run analysis'}
