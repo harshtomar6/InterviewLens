@@ -58,9 +58,15 @@ secrets** — add them under *Settings → Secrets and variables → Actions*:
 | `APPLE_APP_SPECIFIC_PASSWORD` | mac | app-specific password |
 | `APPLE_TEAM_ID` | mac | Apple Developer Team ID |
 
-With no secrets set, CI keeps producing unsigned artifacts. When `CSC_LINK` is
-present, signing turns on automatically (and notarization too, once
-`notarize: true` is enabled in the config).
+CI is **unsigned by default**. To sign: add the secrets above, then in
+`.github/workflows/build.yml` **uncomment** the `CSC_*` / `APPLE_*` env lines in
+the "Package installers" step (leave `CSC_IDENTITY_AUTO_DISCOVERY: 'false'` —
+with `CSC_LINK` set, electron-builder signs from that cert directly). For
+notarization, also set `notarize: true` under `mac:` in `electron-builder.yml`.
+
+> Don't pass empty `CSC_*` env vars — an empty `CSC_LINK` is read as a cert path
+> and the build fails with `not a file`. That's why the lines are commented, not
+> wired to possibly-empty secrets.
 
 ## App icon
 
