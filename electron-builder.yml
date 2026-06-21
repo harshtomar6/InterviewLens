@@ -1,5 +1,8 @@
 appId: com.interviewlens.app
 productName: InterviewLens
+# Ad-hoc signs the macOS bundle when no real cert is set, so unsigned builds
+# open via right-click → Open instead of being blocked as "damaged".
+afterSign: build/afterSign.cjs
 directories:
   buildResources: build
   output: dist-app

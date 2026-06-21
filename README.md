@@ -76,7 +76,11 @@ npm run dist:mac     # signed/notarizable .dmg + .zip (configure signing yoursel
 
 Packaging is configured in `electron-builder.yml`. macOS `Info.plist` keys (`NSMicrophoneUsageDescription`, `NSAudioCaptureUsageDescription`) and entitlements (`build/entitlements.mac.plist`) are wired up for a hardened-runtime build.
 
-Builds are **unsigned** by default. CI (`.github/workflows/build.yml`) builds macOS + Windows installers on native runners — trigger it from the Actions tab or by pushing a `v*` tag. For code signing & notarization (and replacing the placeholder app icon), see [SIGNING.md](./SIGNING.md).
+Builds are **unsigned** by default (the macOS bundle is ad-hoc signed so it isn't blocked as "damaged"). CI (`.github/workflows/build.yml`) builds macOS + Windows installers on native runners — trigger it from the Actions tab or by pushing a `v*` tag. For code signing & notarization (and replacing the placeholder app icon), see [SIGNING.md](./SIGNING.md).
+
+**Opening an unsigned build:**
+- **macOS:** right-click the app → **Open** → **Open** (Gatekeeper "unidentified developer"). If macOS still says it's *damaged* (e.g. copied via a quarantined download), clear the flag: `xattr -cr /Applications/InterviewLens.app`.
+- **Windows:** SmartScreen → **More info** → **Run anyway**.
 
 ---
 
