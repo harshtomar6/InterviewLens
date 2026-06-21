@@ -1,4 +1,4 @@
-import { app, BrowserWindow, desktopCapturer, session, shell } from 'electron'
+import { app, BrowserWindow, desktopCapturer, nativeTheme, session, shell } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpc } from './ipc'
@@ -7,16 +7,43 @@ import { handleTrackScheme, registerTrackScheme } from './audio/track-protocol'
 // Privileged scheme registration MUST run before app 'ready'.
 registerTrackScheme()
 
+const TITLEBAR_HEIGHT = 46
+
+// Caption-bar colors for the Windows Controls Overlay, matched to the content
+// titlebar region per theme.
+function overlayColors(): { color: string; symbolColor: string } {
+  return nativeTheme.shouldUseDarkColors
+    ? { color: '#171920', symbolColor: '#edeff3' }
+    : { color: '#f3f4f6', symbolColor: '#1b1d23' }
+}
+
 function createWindow(): BrowserWindow {
+  const isMac = process.platform === 'darwin'
+  const isWin = process.platform === 'win32'
+
   const win = new BrowserWindow({
     width: 1180,
     height: 820,
-    minWidth: 900,
-    minHeight: 640,
+    minWidth: 940,
+    minHeight: 660,
     show: false,
     autoHideMenuBar: true,
     title: 'InterviewLens',
-    backgroundColor: '#0f1115',
+    // Integrated title bar so the window has no separate OS chrome bar above the
+    // app — the #1 thing that makes Electron apps read as "web page in a window".
+    //  - macOS: hiddenInset keeps the traffic lights inset over our sidebar.
+    //  - Windows: hidden + Controls Overlay restores native min/max/close buttons
+    //    (plain 'hidden' would leave the window with NO controls).
+    //  - Linux: keep the native frame for guaranteed window controls.
+    titleBarStyle: isMac ? 'hiddenInset' : isWin ? 'hidden' : 'default',
+    trafficLightPosition: isMac ? { x: 14, y: 18 } : undefined,
+    titleBarOverlay: isWin ? { ...overlayColors(), height: TITLEBAR_HEIGHT } : undefined,
+    // Frosted native macOS material behind the (translucent) sidebar.
+    vibrancy: isMac ? 'sidebar' : undefined,
+    visualEffectState: 'active',
+    // No opaque bg on mac (it would hide the vibrancy); theme-matched solid
+    // fallback on platforms without vibrancy so the sidebar base is correct.
+    backgroundColor: isMac ? '#00000000' : nativeTheme.shouldUseDarkColors ? '#0f1115' : '#e9eaee',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -26,6 +53,15 @@ function createWindow(): BrowserWindow {
   })
 
   win.on('ready-to-show', () => win.show())
+
+  // Follow OS light/dark changes on platforms using the solid fallback / overlay.
+  if (!isMac) {
+    nativeTheme.on('updated', () => {
+      if (win.isDestroyed()) return
+      win.setBackgroundColor(nativeTheme.shouldUseDarkColors ? '#0f1115' : '#e9eaee')
+      if (isWin) win.setTitleBarOverlay({ ...overlayColors(), height: TITLEBAR_HEIGHT })
+    })
+  }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
