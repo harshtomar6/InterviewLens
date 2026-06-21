@@ -1,0 +1,53 @@
+name: Build desktop apps
+
+# Build installers on native runners (the reliable way to get correct native
+# modules — better-sqlite3 / keytar — for each OS). Triggered manually or by a
+# version tag like v0.1.0.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS
+          - os: windows-latest
+            name: Windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Installs deps and rebuilds native modules for THIS runner's OS/arch
+      # via the postinstall (electron-builder install-app-deps).
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Package installers
+        run: npx electron-builder --publish never
+        env:
+          # No signing certs in CI — produce unsigned artifacts.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: interviewlens-${{ matrix.name }}
+          path: |
+            dist-app/*.dmg
+            dist-app/*.zip
+            dist-app/*.exe
+            dist-app/*.blockmap
+          if-no-files-found: ignore
