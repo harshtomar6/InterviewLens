@@ -280,6 +280,18 @@ textarea { resize: vertical; }
 
 .analysis-pane .btn { margin-top: 18px; }
 
+/* perspective switch */
+.perspective-switch { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.seg button { -webkit-app-region: no-drag; display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--muted); padding: 6px 14px; cursor: pointer; border-radius: 7px; font-size: 13px; }
+.seg button:hover { color: var(--text); }
+.seg button.active { color: var(--text); background: var(--panel-strong); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+.seg .seg-dot { font-size: 7px; color: var(--ok); }
+.perspective-note { color: var(--faint); font-size: 12px; }
+.generate-prompt { background: var(--panel); border: 1px dashed var(--line-strong); border-radius: var(--radius); padding: 28px; text-align: center; }
+.generate-prompt .hint { margin: 0 0 14px; }
+.generate-prompt .btn { margin-top: 0; }
+
 /* transcript */
 .transcript { display: flex; flex-direction: column; gap: 10px; user-select: text; }
 .utterance { padding: 11px 14px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line); }

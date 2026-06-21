@@ -7,20 +7,26 @@ import { pathExists, trackPath } from './store/files'
 
 function interviewToMarkdown(interview: Interview): string {
   const date = new Date(interview.createdAt).toLocaleString()
-  const lens = interview.role === 'interviewer' ? 'Candidate evaluation' : 'Candidate coaching'
   const transcript = interview.transcript
     ? formatTranscript(interview.transcript)
     : '_No transcript available._'
+
+  const lensName = (p: 'interviewer' | 'candidate'): string =>
+    p === 'interviewer' ? 'Interviewer perspective — candidate evaluation' : 'Candidate perspective — coaching'
+
+  const analysisSections = (['interviewer', 'candidate'] as const)
+    .filter((p) => interview.analyses[p])
+    .map((p) => `## Analysis · ${lensName(p)}\n\n${interview.analyses[p]}`)
+    .join('\n\n')
+
   return `# ${interview.title}
 
-- **Role:** ${interview.role} (${lens})
+- **Recorded as:** ${interview.role}
 - **Date:** ${date}
 - **Duration:** ${Math.round(interview.durationSec)}s
 
 ${interview.jobDescription.trim() ? `## Job Description\n\n${interview.jobDescription.trim()}\n` : ''}
-## Analysis
-
-${interview.analysisMarkdown ?? '_No analysis available._'}
+${analysisSections || '_No analysis available._'}
 
 ## Transcript
 

@@ -48,11 +48,16 @@ export interface InterviewMeta {
   hasTranscript: boolean
 }
 
+/** A perspective is just a role used as the analysis lens, independent of the
+ * recording's own role (which defines the immutable speaker labels). */
+export type Perspective = UserRole
+
 export interface Interview extends InterviewMeta {
   micWavPath: string
   systemWavPath: string
   transcript: Transcript | null
-  analysisMarkdown: string | null
+  /** Analysis report per perspective; null until generated for that lens. */
+  analyses: Record<Perspective, string | null>
 }
 
 export interface ChatMessage {

@@ -49,8 +49,54 @@ export function getDb(): Database.Database {
     );
     CREATE INDEX IF NOT EXISTS idx_threads_interview ON chat_threads(interview_id);
     CREATE INDEX IF NOT EXISTS idx_messages_thread ON chat_messages(thread_id);
+
+    CREATE TABLE IF NOT EXISTS analyses (
+      interview_id TEXT NOT NULL,
+      perspective TEXT NOT NULL,
+      markdown TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (interview_id, perspective),
+      FOREIGN KEY (interview_id) REFERENCES interviews(id) ON DELETE CASCADE
+    );
+
+    -- Migrate any pre-existing single analysis into the per-perspective table,
+    -- under the recording's own role. Idempotent.
+    INSERT OR IGNORE INTO analyses (interview_id, perspective, markdown, created_at)
+      SELECT id, role, analysis_markdown, created_at
+      FROM interviews WHERE analysis_markdown IS NOT NULL;
   `)
   return db
+}
+
+function analysesFor(interviewId: string): Record<'interviewer' | 'candidate', string | null> {
+  const rows = getDb()
+    .prepare('SELECT perspective, markdown FROM analyses WHERE interview_id = ?')
+    .all(interviewId) as { perspective: string; markdown: string }[]
+  const map: Record<'interviewer' | 'candidate', string | null> = {
+    interviewer: null,
+    candidate: null
+  }
+  for (const r of rows) {
+    if (r.perspective === 'interviewer' || r.perspective === 'candidate') {
+      map[r.perspective] = r.markdown
+    }
+  }
+  return map
+}
+
+export function setAnalysis(
+  interviewId: string,
+  perspective: 'interviewer' | 'candidate',
+  markdown: string
+): void {
+  getDb()
+    .prepare(
+      `INSERT INTO analyses (interview_id, perspective, markdown, created_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(interview_id, perspective)
+       DO UPDATE SET markdown = excluded.markdown, created_at = excluded.created_at`
+    )
+    .run(interviewId, perspective, markdown, Date.now())
 }
 
 interface InterviewRow {
@@ -82,7 +128,7 @@ function rowToInterview(r: InterviewRow): Interview {
     micWavPath: r.mic_wav_path,
     systemWavPath: r.system_wav_path,
     transcript: r.transcript_json ? (JSON.parse(r.transcript_json) as Transcript) : null,
-    analysisMarkdown: r.analysis_markdown
+    analyses: analysesFor(r.id)
   }
 }
 
@@ -113,7 +159,6 @@ export function updateInterview(
     status: Interview['status']
     error: string | null
     transcript: Transcript | null
-    analysisMarkdown: string | null
     durationSec: number
   }>
 ): void {
@@ -134,10 +179,6 @@ export function updateInterview(
   if (fields.transcript !== undefined) {
     sets.push('transcript_json = @transcript')
     params.transcript = fields.transcript ? JSON.stringify(fields.transcript) : null
-  }
-  if (fields.analysisMarkdown !== undefined) {
-    sets.push('analysis_markdown = @analysis')
-    params.analysis = fields.analysisMarkdown
   }
   if (fields.durationSec !== undefined) {
     sets.push('duration_sec = @durationSec')

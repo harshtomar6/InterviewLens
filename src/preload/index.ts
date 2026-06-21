@@ -49,7 +49,8 @@ const api = {
   },
 
   // analysis / chat
-  analyzeInterview: (id: string): Promise<string> => ipcRenderer.invoke(IPC.analyzeInterview, id),
+  analyzeInterview: (id: string, perspective?: UserRole): Promise<string> =>
+    ipcRenderer.invoke(IPC.analyzeInterview, id, perspective),
   createChatThread: (interviewId: string, title: string): Promise<ChatThread> =>
     ipcRenderer.invoke(IPC.createChatThread, interviewId, title),
   listChatThreads: (interviewId: string): Promise<ChatThread[]> =>

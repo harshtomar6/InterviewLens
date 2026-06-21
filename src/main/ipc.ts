@@ -32,6 +32,7 @@ import {
   insertInterview,
   listInterviews,
   listThreads,
+  setAnalysis,
   updateInterview
 } from './store/db'
 import { deleteApiKey, hasApiKey, setApiKey } from './store/keys'
@@ -127,14 +128,16 @@ export function registerIpc(): void {
     )
     updateInterview(interviewId, { transcript })
 
-    // Phase 2 — analysis. A failure here leaves the transcript intact.
+    // Phase 2 — analysis from the recording's own perspective. A failure here
+    // leaves the transcript intact (other perspectives are generated on demand).
     onProgress({ interviewId, stage: 'analyze', detail: 'Generating role-specific analysis' })
     const messages = buildAnalysisMessages(interview.role, interview.jobDescription, transcript)
     const analysisMarkdown = await chatComplete(settings.analysisModel, messages, {
       temperature: 0.3,
       maxTokens: 4000
     })
-    updateInterview(interviewId, { status: 'complete', analysisMarkdown, error: null })
+    setAnalysis(interviewId, interview.role, analysisMarkdown)
+    updateInterview(interviewId, { status: 'complete', error: null })
     onProgress({ interviewId, stage: 'done', detail: 'Complete' })
   }
 
@@ -189,31 +192,39 @@ export function registerIpc(): void {
     }
   })
 
-  // Re-run analysis only (failed-analysis retry, or model switch). Requires a
-  // stored transcript; marks the interview complete on success.
-  handle(IPC.analyzeInterview, async (_e, interviewId: string) => {
-    const interview = getInterview(interviewId)
-    if (!interview) throw new Error('Interview not found')
-    if (!interview.transcript) throw new Error('Interview has no transcript to analyze')
-    const settings = await readSettings()
-    const messages = buildAnalysisMessages(
-      interview.role,
-      interview.jobDescription,
-      interview.transcript
-    )
-    try {
-      const analysisMarkdown = await chatComplete(settings.analysisModel, messages, {
-        temperature: 0.3,
-        maxTokens: 4000
-      })
-      updateInterview(interviewId, { status: 'complete', analysisMarkdown, error: null })
-      return analysisMarkdown
-    } catch (err) {
-      const msg = describeError(err)
-      updateInterview(interviewId, { status: 'error', error: msg })
-      throw new Error(msg)
+  // Generate (or regenerate) the analysis for a given PERSPECTIVE — the
+  // recording role by default, or the opposite lens on demand. Same transcript,
+  // different prompt. Requires a stored transcript.
+  handle(
+    IPC.analyzeInterview,
+    async (_e, interviewId: string, perspective?: UserRole) => {
+      const interview = getInterview(interviewId)
+      if (!interview) throw new Error('Interview not found')
+      if (!interview.transcript) throw new Error('Interview has no transcript to analyze')
+      const lens: UserRole = perspective ?? interview.role
+      const settings = await readSettings()
+      const messages = buildAnalysisMessages(lens, interview.jobDescription, interview.transcript)
+      try {
+        const analysisMarkdown = await chatComplete(settings.analysisModel, messages, {
+          temperature: 0.3,
+          maxTokens: 4000
+        })
+        setAnalysis(interviewId, lens, analysisMarkdown)
+        // Generating the recording-role analysis clears a prior failure.
+        if (interview.status === 'error') {
+          updateInterview(interviewId, { status: 'complete', error: null })
+        }
+        return analysisMarkdown
+      } catch (err) {
+        const msg = describeError(err)
+        // Only flag the interview itself as errored if its primary lens failed.
+        if (lens === interview.role && !interview.analyses[interview.role]) {
+          updateInterview(interviewId, { status: 'error', error: msg })
+        }
+        throw new Error(msg)
+      }
     }
-  })
+  )
 
   // --- ask-later chat ---
   handle(IPC.createChatThread, (_e, interviewId: string, title: string) =>
