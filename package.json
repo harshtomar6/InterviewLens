@@ -1,6 +1,6 @@
 {
   "name": "interviewlens",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Record a video-call interview (audio only), transcribe it, and get role-aware AI feedback — for interviewers and candidates alike.",
   "author": "InterviewLens contributors",
   "license": "MIT",
